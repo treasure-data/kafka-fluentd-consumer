@@ -1,0 +1,27 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+version = '0.0.1'
+
+repositories { 
+    mavenCentral()
+}
+
+dependencies {
+    compile group: "org.fluentd", name: "fluent-logger", version: "0.3.2"
+    compile group: "org.apache.kafka", name: "kafka_2.10", version: "0.8.2.0"
+    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: "2.6.1"
+    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: "2.6.1"
+    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: "2.6.1"
+}
+
+task jarInAllDependencies(type: Jar) { 
+    manifest { 
+        attributes 'Implementation-Title': 'Kafka Consumer for Fluentd',  
+                   'Implementation-Version': version,
+                   'Main-Class': 'org.fluentd.kafka.GroupConsumer'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
