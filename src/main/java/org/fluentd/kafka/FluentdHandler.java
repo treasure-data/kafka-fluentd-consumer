@@ -28,7 +28,6 @@ public class FluentdHandler implements Runnable {
 
         JsonFactory factory = new JsonFactory();
         mapper = new ObjectMapper(factory);
-        //mapper = new ObjectMapper();
     }
 
     public void run() {
@@ -38,18 +37,13 @@ public class FluentdHandler implements Runnable {
 
             try {
                 HashMap<String, Object> data = mapper.readValue(new String(entry.message()), typeRef);
-                //String json = new String(entry.message());
-                //Map<String, Object> data = mapper.readValue(json, new TypeReference<HashMap<String, Object>>() {});
-                //Map<String, Object> data  =  new HashMap<String, Object>();
-                //data.put("message", new String(entry.message()));
-                //data.put("message", new String(it.next().message()));
+                // TODO: Add kafka metadata like metada and topic
+                // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
                 logger.log(entry.topic(), data);
-                //logger.log(it.next().topic(), data);
             } catch (IOException e) {
-                Map<String, Object> data  =  new HashMap<String, Object>();
+                Map<String, Object> data = new HashMap<String, Object>();
                 data.put("message", new String(entry.message()));
-                data.put("message", new String(it.next().message()));
-                logger.log("failed", data);
+                logger.log("failed", data); // should be configurable
             }
         }
         System.out.println("Shutting down Thread: " + threadNumber);
