@@ -7,6 +7,7 @@ import kafka.utils.ZkUtils;
 
 import org.fluentd.logger.FluentLogger;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,29 +15,23 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileInputStream;
-import java.util.Properties;
  
 public class GroupConsumer {
     private static FluentLogger LOG = FluentLogger.getLogger("kafka");
 
     private final ConsumerConnector consumer;
     private final String topic;
-    private final Properties props;
+    private final PropertyConfig config;
     private  ExecutorService executor;
  
-    public GroupConsumer(String propFilePath) throws IOException {
-        props = loadConsumerConfig(propFilePath);
-        consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(props));
-        this.topic = props.getProperty("topic");
+    public GroupConsumer(PropertyConfig config) throws IOException {
+        this.config = config;
+        this.consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(config.getProperties()));
+        this.topic = config.get("fluentd.consumer.topics");
 
         // for testing. Don't use on production
-        if (Boolean.valueOf(props.getProperty("from-beginning")))
-            ZkUtils.maybeDeletePath(props.getProperty("zookeeper.connect"), "/consumers/" + props.getProperty("group.id"));
+        if (config.getBoolean("fluentd.consumer.from-beginning"))
+            ZkUtils.maybeDeletePath(config.get("zookeeper.connect"), "/consumers/" + config.get("group.id"));
     }
  
     public void shutdown() {
@@ -69,30 +64,10 @@ public class GroupConsumer {
         }
     }
  
-    private static Properties loadConsumerConfig(String propFilePath) throws IOException {
-        Properties props = new Properties();
-        InputStream input = null;
-
-        try {
-            input = new FileInputStream(propFilePath);
-            if (input != null) {
-                props.load(input);
-            } else {
-                throw new FileNotFoundException(propFilePath + "' not found");
-            }
-        } finally {
-            input.close();
-        }
-
-        return props;
-    }
- 
     public static void main(String[] args) throws IOException {
-        String propFilePath = args[0];
-        int threads = Integer.parseInt(args[1]);
- 
-        GroupConsumer gc = new GroupConsumer(propFilePath);
-        gc.run(threads);
+        PropertyConfig pc = new PropertyConfig(args[0]);
+        GroupConsumer gc = new GroupConsumer(pc);
+        gc.run(pc.getInt("fluentd.consumer.threads"));
  
         try {
             // Need better long running approach.
