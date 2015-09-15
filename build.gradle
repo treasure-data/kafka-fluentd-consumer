@@ -1,5 +1,11 @@
-apply plugin: 'java'
-apply plugin: 'maven'
+//apply plugin: 'java'
+//apply plugin: 'maven'
+
+plugins { 
+  id 'java'
+  id 'maven'
+  id 'com.github.johnrengelman.shadow' version '1.2.2'
+}
 
 version = '0.0.1'
 
@@ -15,13 +21,10 @@ dependencies {
     compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: "2.6.1"
 }
 
-task jarInAllDependencies(type: Jar) { 
+jar {
     manifest { 
         attributes 'Implementation-Title': 'Kafka Consumer for Fluentd',  
                    'Implementation-Version': version,
                    'Main-Class': 'org.fluentd.kafka.GroupConsumer'
     }
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
 }

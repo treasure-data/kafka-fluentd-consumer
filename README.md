@@ -4,9 +4,9 @@ This is a simple Java application to consume the data from Kafka, and forward to
 
 ## Build
 
-Use gradle.
+Use gradle 2.1 or later.
 
-    $ gradle jarInAllDependencies
+    $ gradle shadowJar
 
 ## Run
 
@@ -42,7 +42,7 @@ You can confirm messages were submitted correctly with this command.
 
 Please modify `config/fluentd-consumer.properties` with an appropriate configuration. Especially don't forget to change to `topic=test`. Finally please launch the process like this. 2nd argument specifies the number of threads.
 
-    $ java -jar build/libs/kafka-fluentd-consumer-all-0.0.1.jar config/fluentd-consumer.properties 1
+    $ java -jar build/libs/kafka-fluentd-consumer-0.0.1-all.jar config/fluentd-consumer.properties 1
 
 This will forward logs to Fluentd (localhost:24224).
 
@@ -56,7 +56,7 @@ A couple of users has been asking to host consumer as a child process of Fluentd
     
     <source>
       type exec
-      command java -jar /path/to/kafka-fluentd-consumer-all-0.0.1.jar /path/to/config/fluentd-consumer.properties 1
+      command java -jar /path/to/kafka-fluentd-consumer-0.0.1-all.jar /path/to/config/fluentd-consumer.properties 1
       tag dummy
       format json
     </source>
