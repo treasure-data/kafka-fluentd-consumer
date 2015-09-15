@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
  
 public class GroupConsumer {
-    private static FluentLogger LOG = FluentLogger.getLogger("kafka");
+    private static FluentLogger LOG = FluentLogger.getLogger("");
 
     private final ConsumerConnector consumer;
     private final String topic;
@@ -30,7 +30,7 @@ public class GroupConsumer {
         this.topic = config.get("fluentd.consumer.topics");
 
         // for testing. Don't use on production
-        if (config.getBoolean("fluentd.consumer.from-beginning"))
+        if (config.getBoolean("fluentd.consumer.from.beginning", false))
             ZkUtils.maybeDeletePath(config.get("zookeeper.connect"), "/consumers/" + config.get("group.id"));
     }
  
@@ -59,7 +59,7 @@ public class GroupConsumer {
         // now create an object to consume the messages
         int threadNumber = 0;
         for (final KafkaStream stream : streams) {
-            executor.submit(new FluentdHandler(stream, threadNumber, LOG));
+            executor.submit(new FluentdHandler(stream, config, LOG));
             threadNumber++;
         }
     }

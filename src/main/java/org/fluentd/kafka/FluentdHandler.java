@@ -15,14 +15,16 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.io.IOException;
 
 public class FluentdHandler implements Runnable {
+    private final PropertyConfig config;
+    private final FluentdTagger tagger;
     private KafkaStream stream;
-    private int threadNumber;
     private FluentLogger logger;
     private ObjectMapper mapper;
     private static TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {};
 
-    public FluentdHandler(KafkaStream stream, int threadNumber, FluentLogger logger) {
-        this.threadNumber = threadNumber;
+    public FluentdHandler(KafkaStream stream, PropertyConfig config, FluentLogger logger) {
+        this.config = config;
+        this.tagger = config.getTagger();
         this.stream = stream;
         this.logger = logger;
 
@@ -39,13 +41,13 @@ public class FluentdHandler implements Runnable {
                 HashMap<String, Object> data = mapper.readValue(new String(entry.message()), typeRef);
                 // TODO: Add kafka metadata like metada and topic
                 // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
-                logger.log(entry.topic(), data);
+                logger.log(tagger.generate(entry.topic()), data);
             } catch (IOException e) {
                 Map<String, Object> data = new HashMap<String, Object>();
                 data.put("message", new String(entry.message()));
                 logger.log("failed", data); // should be configurable
             }
         }
-        System.out.println("Shutting down Thread: " + threadNumber);
+        System.out.println("Shutting down Thread: " + config.get("fluentd.consumer.threads"));
     }
 }
