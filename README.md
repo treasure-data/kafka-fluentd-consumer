@@ -42,9 +42,9 @@ You can confirm messages were submitted correctly with this command.
 
 Please modify `config/fluentd-consumer.properties` with an appropriate configuration. Especially don't forget to change to `topic=test`. Finally please launch the process like this. 2nd argument specifies the number of threads.
 
-    $ java -jar build/libs/kafka-fluentd-consumer-0.0.1-all.jar config/fluentd-consumer.properties
+    $ java -Dlog4j.configuration=/path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.0.1-all.jar config/fluentd-consumer.properties
 
-This will forward logs to Fluentd (localhost:24224).
+This will forward logs to Fluentd (localhost:24224). This consumer uses log4j so you can change logging configurations via `-Dlog4j.configuration` argument.
 
 ## Run Kafka Consumer for Fluentd via in_exec
 
@@ -56,7 +56,7 @@ A couple of users has been asking to host consumer as a child process of Fluentd
     
     <source>
       type exec
-      command java -jar /path/to/kafka-fluentd-consumer-0.0.1-all.jar /path/to/config/fluentd-consumer.properties
+      command java -Dlog4j.configuration=/path/to/log4j.properties -jar /path/to/kafka-fluentd-consumer-0.0.1-all.jar /path/to/config/fluentd-consumer.properties
       tag dummy
       format json
     </source>
