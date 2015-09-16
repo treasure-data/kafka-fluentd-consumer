@@ -8,6 +8,7 @@ import kafka.utils.ZkUtils;
 import org.fluentd.logger.FluentLogger;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,13 +18,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
  
 public class GroupConsumer {
-    private static FluentLogger LOG = FluentLogger.getLogger("");
-
     private final ConsumerConnector consumer;
     private final String topic;
     private final PropertyConfig config;
-    private  ExecutorService executor;
- 
+    private ExecutorService executor;
+    private FluentLogger fluentLogger;
+
     public GroupConsumer(PropertyConfig config) throws IOException {
         this.config = config;
         this.consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(config.getProperties()));
@@ -32,6 +32,13 @@ public class GroupConsumer {
         // for testing. Don't use on production
         if (config.getBoolean(PropertyConfig.Constants.FLUENTD_CONSUMER_FROM_BEGINNING.key, false))
             ZkUtils.maybeDeletePath(config.get(PropertyConfig.Constants.KAFKA_ZOOKEEPER_CONNECT.key), "/consumers/" + config.get(PropertyConfig.Constants.KAFKA_GROUP_ID.key));
+
+        setupFluentdLogger();
+    }
+
+    public void setupFluentdLogger() {
+        URI uri = config.getFluentdConnect();
+        fluentLogger = FluentLogger.getLogger("", uri.getHost(), uri.getPort());
     }
  
     public void shutdown() {
@@ -47,7 +54,7 @@ public class GroupConsumer {
             System.out.println("Interrupted during shutdown, exiting uncleanly");
         }
 
-        LOG.close();
+        fluentLogger.close();
    }
  
     public void run(int numThreads) {
@@ -61,7 +68,7 @@ public class GroupConsumer {
         // now create an object to consume the messages
         int threadNumber = 0;
         for (final KafkaStream stream : streams) {
-            executor.submit(new FluentdHandler(stream, config, LOG));
+            executor.submit(new FluentdHandler(stream, config, fluentLogger));
             threadNumber++;
         }
     }
