@@ -1,5 +1,8 @@
 package org.fluentd.kafka;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaStream;
 import kafka.consumer.TopicFilter;
@@ -20,6 +23,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
  
 public class GroupConsumer {
+    private static final Logger LOG = LoggerFactory.getLogger(GroupConsumer.class);
+
     private final ConsumerConnector consumer;
     private final String topic;
     private final PropertyConfig config;
@@ -44,16 +49,16 @@ public class GroupConsumer {
     }
  
     public void shutdown() {
-        System.out.println("Shutting down consumers");
+        LOG.info("Shutting down consumers");
 
         if (consumer != null) consumer.shutdown();
         if (executor != null) executor.shutdown();
         try {
             if (!executor.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
-                System.out.println("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+                LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
             }
         } catch (InterruptedException e) {
-            System.out.println("Interrupted during shutdown, exiting uncleanly");
+            LOG.error("Interrupted during shutdown, exiting uncleanly");
         }
 
         fluentLogger.close();
@@ -66,10 +71,8 @@ public class GroupConsumer {
         executor = Executors.newFixedThreadPool(numThreads);
  
         // now create an object to consume the messages
-        int threadNumber = 0;
         for (final KafkaStream stream : streams) {
             executor.submit(new FluentdHandler(stream, config, fluentLogger));
-            threadNumber++;
         }
     }
  
@@ -90,7 +93,7 @@ public class GroupConsumer {
                 Thread.sleep(10000);
             }
         } catch (InterruptedException e) {
-            System.out.println(e);
+            LOG.error("Something happen!", e);
         }
     }
 }
