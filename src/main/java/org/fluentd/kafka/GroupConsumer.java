@@ -2,6 +2,8 @@ package org.fluentd.kafka;
 
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaStream;
+import kafka.consumer.TopicFilter;
+import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.utils.ZkUtils;
 
@@ -58,10 +60,8 @@ public class GroupConsumer {
    }
  
     public void run(int numThreads) {
-        Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
-        topicCountMap.put(topic, new Integer(numThreads));
-        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCountMap);
-        List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
+        TopicFilter topicFilter = new Whitelist(config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS.key));
+        List<KafkaStream<byte[], byte[]>> streams = consumer.createMessageStreamsByFilter(topicFilter, numThreads);
  
         executor = Executors.newFixedThreadPool(numThreads);
  
@@ -77,7 +77,7 @@ public class GroupConsumer {
         PropertyConfig pc = new PropertyConfig(args[0]);
         GroupConsumer gc = new GroupConsumer(pc);
         gc.run(pc.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key));
- 
+
         try {
             // Need better long running approach.
             while (true) {
