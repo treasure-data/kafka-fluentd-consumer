@@ -7,6 +7,22 @@ import java.io.FileInputStream;
 import java.util.Properties;
 
 public class PropertyConfig {
+    public enum Constants {
+        FLUENTD_TAG("fluentd.tag"),
+        FLUENTD_TAG_PREFIX("fluentd.tag.prefix"),
+        FLUENTD_CONSUMER_TOPICS("fluentd.consumer.topics"),
+        FLUENTD_CONSUMER_THREADS("fluentd.consumer.threads"),
+        FLUENTD_CONSUMER_FROM_BEGINNING("fluentd.consumer.from.beginning"),
+        KAFKA_ZOOKEEPER_CONNECT("zookeeper.connect"),
+        KAFKA_GROUP_ID("group.id");
+
+        public final String key;
+
+        Constants(String key) {
+            this.key = key;
+        }
+    }
+
     private final Properties props;
     private final FluentdTagger tagger;
 
@@ -60,13 +76,13 @@ public class PropertyConfig {
     }
 
     private FluentdTagger setupTagger() {
-        String tag = props.getProperty("fluentd.tag");
-        String tagPrefix = props.getProperty("fluentd.tag.prefix");
+        String tag = props.getProperty(Constants.FLUENTD_TAG.key);
+        String tagPrefix = props.getProperty(Constants.FLUENTD_TAG_PREFIX.key);
 
         if (tag == null && tagPrefix == null)
-            throw new RuntimeException("fluentd.tag or fluentd.tag.prefix property is required");
+            throw new RuntimeException(Constants.FLUENTD_TAG.key + " or " + Constants.FLUENTD_TAG_PREFIX.key + "property is required");
         if (tag != null && tagPrefix != null)
-            throw new RuntimeException("can't set fluentd.tag and fluentd.tag.prefix properties at the same time");
+            throw new RuntimeException("can't set " + Constants.FLUENTD_TAG.key + " and " + Constants.FLUENTD_TAG_PREFIX.key + " properties at the same time");
 
         return new FluentdTagger(tag, tagPrefix);
     }

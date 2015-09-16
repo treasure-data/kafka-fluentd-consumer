@@ -48,6 +48,5 @@ public class FluentdHandler implements Runnable {
                 logger.log("failed", data); // should be configurable
             }
         }
-        System.out.println("Shutting down Thread: " + config.get("fluentd.consumer.threads"));
     }
 }
