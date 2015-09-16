@@ -74,9 +74,15 @@ public class GroupConsumer {
     }
  
     public static void main(String[] args) throws IOException {
-        PropertyConfig pc = new PropertyConfig(args[0]);
-        GroupConsumer gc = new GroupConsumer(pc);
+        final PropertyConfig pc = new PropertyConfig(args[0]);
+        final GroupConsumer gc = new GroupConsumer(pc);
+
         gc.run(pc.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key));
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                public void run() {
+                    gc.shutdown();
+                }
+            }));
 
         try {
             // Need better long running approach.
@@ -86,7 +92,5 @@ public class GroupConsumer {
         } catch (InterruptedException e) {
             System.out.println(e);
         }
-
-        gc.shutdown();
     }
 }
