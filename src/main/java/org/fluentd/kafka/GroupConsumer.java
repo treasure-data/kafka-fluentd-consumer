@@ -14,9 +14,7 @@ import org.fluentd.logger.FluentLogger;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +42,7 @@ public class GroupConsumer {
     }
 
     public void setupFluentdLogger() {
-        URI uri = config.getFluentdConnect();
+        final URI uri = config.getFluentdConnect();
         fluentLogger = FluentLogger.getLogger("", uri.getHost(), uri.getPort());
     }
  
@@ -64,13 +62,13 @@ public class GroupConsumer {
         fluentLogger.close();
    }
  
-    public void run(int numThreads) {
+    public void run() {
+        int numThreads = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key);
         TopicFilter topicFilter = new Whitelist(config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS.key));
         List<KafkaStream<byte[], byte[]>> streams = consumer.createMessageStreamsByFilter(topicFilter, numThreads);
  
-        executor = Executors.newFixedThreadPool(numThreads);
- 
         // now create an object to consume the messages
+        executor = Executors.newFixedThreadPool(numThreads);
         for (final KafkaStream stream : streams) {
             executor.submit(new FluentdHandler(stream, config, fluentLogger));
         }
@@ -80,7 +78,7 @@ public class GroupConsumer {
         final PropertyConfig pc = new PropertyConfig(args[0]);
         final GroupConsumer gc = new GroupConsumer(pc);
 
-        gc.run(pc.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key));
+        gc.run();
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 public void run() {
                     gc.shutdown();

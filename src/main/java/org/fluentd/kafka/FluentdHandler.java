@@ -17,10 +17,10 @@ import java.io.IOException;
 public class FluentdHandler implements Runnable {
     private final PropertyConfig config;
     private final FluentdTagger tagger;
-    private KafkaStream stream;
-    private FluentLogger logger;
-    private ObjectMapper mapper;
-    private static TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {};
+    private final KafkaStream stream;
+    private final FluentLogger logger;
+    private final ObjectMapper mapper;
+    private static final TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {};
 
     public FluentdHandler(KafkaStream stream, PropertyConfig config, FluentLogger logger) {
         this.config = config;
