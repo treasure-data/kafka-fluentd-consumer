@@ -60,3 +60,9 @@ A couple of users has been asking to host consumer as a child process of Fluentd
       tag dummy
       format json
     </source>
+
+## TODO
+
+- Support more format, e.g. msgpack, CSV, text.
+- Improve performance with new fluent-logger-java
+- Add metrics features
