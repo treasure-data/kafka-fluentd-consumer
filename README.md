@@ -40,7 +40,7 @@ You can confirm messages were submitted correctly with this command.
 
 ### Run Kafka Consumer for Fluentd
 
-Please modify `config/fluentd-consumer.properties` with an appropriate configuration. Especially don't forget to change to `topic=test`. Finally please launch the process like this. 2nd argument specifies the number of threads.
+Please modify `config/fluentd-consumer.properties` with an appropriate configuration. Especially don't forget to change to `fluentd.consumer.topics=test`. Finally please launch the process like this.
 
     $ java -Dlog4j.configuration=file://path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.0.1-all.jar config/fluentd-consumer.properties
 
