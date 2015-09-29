@@ -27,23 +27,22 @@ public class GroupConsumer {
     private final String topic;
     private final PropertyConfig config;
     private ExecutorService executor;
-    private FluentLogger fluentLogger;
+    private final FluentLogger fluentLogger;
 
     public GroupConsumer(PropertyConfig config) throws IOException {
         this.config = config;
         this.consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(config.getProperties()));
         this.topic = config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS.key);
+        this.fluentLogger = setupFluentdLogger();
 
         // for testing. Don't use on production
         if (config.getBoolean(PropertyConfig.Constants.FLUENTD_CONSUMER_FROM_BEGINNING.key, false))
             ZkUtils.maybeDeletePath(config.get(PropertyConfig.Constants.KAFKA_ZOOKEEPER_CONNECT.key), "/consumers/" + config.get(PropertyConfig.Constants.KAFKA_GROUP_ID.key));
-
-        setupFluentdLogger();
     }
 
-    public void setupFluentdLogger() {
+    public FluentLogger setupFluentdLogger() {
         final URI uri = config.getFluentdConnect();
-        fluentLogger = FluentLogger.getLogger("", uri.getHost(), uri.getPort());
+        return FluentLogger.getLogger("", uri.getHost(), uri.getPort());
     }
  
     public void shutdown() {
