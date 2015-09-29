@@ -1,6 +1,6 @@
 # Kafka Consumer for Fluentd
 
-This is a simple Java application to consume the data from Kafka, and forward to Fluentd.
+This is a simple Java application to consume data from Kafka and forward to Fluentd.
 
 ## Build
 
@@ -12,7 +12,7 @@ Use gradle 2.1 or later.
 
 ### Run Kafka
 
-If you haven't run Kafka, please start Kafka. If you want to test Kafka locally, please follow the step described at [Quickstart](http://kafka.apache.org/documentation.html#quickstart).
+You need to be running Kafka for the consumer to work. To test Kafka locally, please follow the steps described in [Kafka's Quickstart](http://kafka.apache.org/documentation.html#quickstart).
 
     # start zookeeper
     $ bin/zookeeper-server-start.sh config/zookeeper.properties
@@ -20,12 +20,12 @@ If you haven't run Kafka, please start Kafka. If you want to test Kafka locally,
     # start kafka
     $ bin/kafka-server-start.sh config/server.properties
 
-Then, please create the topic named `test`
+Then create a topic called `test`
 
     # create test topic
     $ bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
 
-After that, please add a couple of messages into `test` topic. Please make sure message is formatted as JSON.
+Once the 'test' topic is created, add a few messages in it. Make sure message is valid JSON.
 
     # send multiple messages
     $ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test 
@@ -40,7 +40,7 @@ You can confirm messages were submitted correctly with this command.
 
 ### Run Kafka Consumer for Fluentd
 
-Please modify `config/fluentd-consumer.properties` with an appropriate configuration. Especially don't forget to change to `fluentd.consumer.topics=test`. Finally please launch the process like this.
+Modify `config/fluentd-consumer.properties` with an appropriate configuration. Don't forget to change to `fluentd.consumer.topics=test`. Finally please launch the process like this.
 
     $ java -Dlog4j.configuration=file:///path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.1.0-all.jar config/fluentd-consumer.properties
 
