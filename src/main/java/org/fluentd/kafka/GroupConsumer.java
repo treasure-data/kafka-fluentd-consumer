@@ -7,6 +7,7 @@ import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaStream;
 import kafka.consumer.TopicFilter;
 import kafka.consumer.Whitelist;
+import kafka.consumer.Blacklist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.utils.ZkUtils;
 
@@ -63,14 +64,32 @@ public class GroupConsumer {
  
     public void run() {
         int numThreads = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key);
-        TopicFilter topicFilter = new Whitelist(config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS.key));
-        List<KafkaStream<byte[], byte[]>> streams = consumer.createMessageStreamsByFilter(topicFilter, numThreads);
- 
+        List<KafkaStream<byte[], byte[]>> streams = setupKafkaStream(numThreads);
+
         // now create an object to consume the messages
         executor = Executors.newFixedThreadPool(numThreads);
         for (final KafkaStream stream : streams) {
             executor.submit(new FluentdHandler(stream, config, fluentLogger));
         }
+    }
+
+    public List<KafkaStream<byte[], byte[]>> setupKafkaStream(int numThreads) {
+        String topics = config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS.key);
+        String topicsPattern = config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_TOPICS_PATTERN.key, "whitelist");
+        TopicFilter topicFilter;
+
+        switch (topicsPattern) {
+        case "whitelist":
+            topicFilter = new Whitelist(topics);
+            break;
+        case "blacklist":
+            topicFilter = new Blacklist(topics);
+            break;
+        default:
+            throw new RuntimeException("'" + topicsPattern + "' topics pattern is not supported");
+        }
+
+        return consumer.createMessageStreamsByFilter(topicFilter, numThreads);
     }
  
     public static void main(String[] args) throws IOException {

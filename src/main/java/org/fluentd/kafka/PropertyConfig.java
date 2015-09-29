@@ -14,6 +14,7 @@ public class PropertyConfig {
         FLUENTD_TAG("fluentd.tag"),
         FLUENTD_TAG_PREFIX("fluentd.tag.prefix"),
         FLUENTD_CONSUMER_TOPICS("fluentd.consumer.topics"),
+        FLUENTD_CONSUMER_TOPICS_PATTERN("fluentd.consumer.topics.pattern"),
         FLUENTD_CONSUMER_THREADS("fluentd.consumer.threads"),
         FLUENTD_CONSUMER_FROM_BEGINNING("fluentd.consumer.from.beginning"),
         KAFKA_ZOOKEEPER_CONNECT("zookeeper.connect"),
