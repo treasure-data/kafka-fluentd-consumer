@@ -11,6 +11,7 @@ import kafka.message.MessageAndMetadata;
 import org.fluentd.logger.FluentLogger;
 import org.fluentd.kafka.parser.MessageParser;
 import org.fluentd.kafka.parser.JsonParser;
+import org.fluentd.kafka.parser.RegexpParser;
 
 public class FluentdHandler implements Runnable {
     private final PropertyConfig config;
@@ -24,7 +25,7 @@ public class FluentdHandler implements Runnable {
         this.tagger = config.getTagger();
         this.stream = stream;
         this.logger = logger;
-        this.parser = new JsonParser(config);
+        this.parser = setupParser();
     }
 
     public void run() {
@@ -42,6 +43,19 @@ public class FluentdHandler implements Runnable {
                 data.put("message", new String(entry.message()));
                 logger.log("failed", data); // should be configurable
             }
+        }
+    }
+
+    private MessageParser setupParser()
+    {
+        String format = config.get("fluentd.record.format", "json");
+        switch (format) {
+        case "json":
+            return new JsonParser(config);
+        case "regexp":
+            return new RegexpParser(config);
+        default:
+            throw new RuntimeException(format + " format is not supported");
         }
     }
 }

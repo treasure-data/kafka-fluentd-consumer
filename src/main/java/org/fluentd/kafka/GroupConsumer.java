@@ -20,7 +20,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
- 
+
 public class GroupConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(GroupConsumer.class);
 
