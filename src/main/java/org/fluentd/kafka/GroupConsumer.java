@@ -11,7 +11,7 @@ import kafka.consumer.Blacklist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.utils.ZkUtils;
 
-import org.fluentd.logger.FluentLogger;
+import org.komamitsu.fluency.Fluency;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,7 +28,7 @@ public class GroupConsumer {
     private final String topic;
     private final PropertyConfig config;
     private ExecutorService executor;
-    private final FluentLogger fluentLogger;
+    private final Fluency fluentLogger;
 
     public GroupConsumer(PropertyConfig config) throws IOException {
         this.config = config;
@@ -41,9 +41,8 @@ public class GroupConsumer {
             ZkUtils.maybeDeletePath(config.get(PropertyConfig.Constants.KAFKA_ZOOKEEPER_CONNECT.key), "/consumers/" + config.get(PropertyConfig.Constants.KAFKA_GROUP_ID.key));
     }
 
-    public FluentLogger setupFluentdLogger() {
-        final URI uri = config.getFluentdConnect();
-        return FluentLogger.getLogger("", uri.getHost(), uri.getPort());
+    public Fluency setupFluentdLogger() throws IOException {
+        return Fluency.defaultFluency(config.getFluentdConnect());
     }
  
     public void shutdown() {
@@ -59,7 +58,11 @@ public class GroupConsumer {
             LOG.error("Interrupted during shutdown, exiting uncleanly");
         }
 
-        fluentLogger.close();
+        try {
+            fluentLogger.close();
+        } catch (IOException e) {
+            LOG.error("failed to close fluentd logger completely", e);
+        }
    }
  
     public void run() {
