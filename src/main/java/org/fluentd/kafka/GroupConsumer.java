@@ -56,6 +56,7 @@ public class GroupConsumer {
             }
         } catch (InterruptedException e) {
             LOG.error("Interrupted during shutdown, exiting uncleanly");
+            executor.shutdownNow();
         }
 
         try {

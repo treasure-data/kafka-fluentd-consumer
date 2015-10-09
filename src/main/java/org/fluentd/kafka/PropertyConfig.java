@@ -124,7 +124,7 @@ public class PropertyConfig {
                 URI uri = new URI("http://" + address + "/");
                 addresses.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
             } catch (Exception e) {
-                throw new RuntimeException("failed to parse '" + address + "' address : " + e.getMessage());
+                throw new RuntimeException("failed to parse '" + address + "' address ", e);
             }
         }
 

@@ -74,6 +74,7 @@ public class FluentdHandler implements Runnable {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException ie) {
                     LOG.warn("Interrupted during sleep");
+                    Thread.currentThread().interrupt();
                 }
             }
         }
