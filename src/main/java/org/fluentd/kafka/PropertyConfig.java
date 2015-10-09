@@ -4,8 +4,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public class PropertyConfig {
@@ -29,20 +32,18 @@ public class PropertyConfig {
 
     private final Properties props;
     private final FluentdTagger tagger;
-    private final URI fluentdConnect;
 
     public PropertyConfig(String propFilePath) throws IOException {
         props = loadProperties(propFilePath);
         tagger = setupTagger();
-        fluentdConnect = parseFluentdConnect();
     }
 
     public Properties getProperties() {
         return props;
     }
 
-    public URI getFluentdConnect() {
-        return fluentdConnect;
+    public List<InetSocketAddress> getFluentdConnect() {
+        return parseFluentdConnect();
     }
 
     public String get(String key) {
@@ -115,16 +116,18 @@ public class PropertyConfig {
         return props;
     }
 
-    private URI parseFluentdConnect() {
-        // TODO: Improve host:port parsing for multiple instances
-        try {
-            return new URI("http://" + get(Constants.FLUENTD_CONNECT.key) + "/");
-        } catch (RuntimeException | URISyntaxException e) {
+    private List<InetSocketAddress> parseFluentdConnect() {
+        List<InetSocketAddress> addresses = new ArrayList<InetSocketAddress>();
+
+        for (String address : get(Constants.FLUENTD_CONNECT.key, "localhost:24224").split(",")) {
             try {
-                return new URI("http://localhost:24224/");
-            } catch (URISyntaxException e2) { }
+                URI uri = new URI("http://" + address + "/");
+                addresses.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
+            } catch (Exception e) {
+                throw new RuntimeException("failed to parse '" + address + "' address ", e);
+            }
         }
 
-        return null;
+        return addresses;
     }
 }
