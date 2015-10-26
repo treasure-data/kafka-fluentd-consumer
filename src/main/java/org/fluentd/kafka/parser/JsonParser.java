@@ -2,6 +2,7 @@ package org.fluentd.kafka.parser;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.io.IOException;
 
 import kafka.message.MessageAndMetadata;
 
@@ -22,6 +23,10 @@ public class JsonParser extends MessageParser {
 
     @Override
     public Map<String, Object> parse(MessageAndMetadata<byte[], byte[]> entry) throws Exception {
-        return mapper.readValue(new String(entry.message()), typeRef);
+        try {
+            return mapper.readValue(new String(entry.message()), typeRef);
+        } catch (IOException e) {
+            throw new RuntimeException(e); // Avoid IOException conflict with fluency logger
+        }
     }
 }
