@@ -112,7 +112,7 @@ public class GroupConsumer {
 
         try {
             // Need better long running approach.
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 Thread.sleep(10000);
             }
         } catch (InterruptedException e) {
