@@ -49,15 +49,17 @@ public class GroupConsumer {
         LOG.info("Shutting down consumers");
 
         if (consumer != null) consumer.shutdown();
-        if (executor != null) executor.shutdown();
-        try {
-            if (!executor.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
-                LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+        if (executor != null) {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
+                    LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                LOG.error("Interrupted during shutdown, exiting uncleanly");
                 executor.shutdownNow();
             }
-        } catch (InterruptedException e) {
-            LOG.error("Interrupted during shutdown, exiting uncleanly");
-            executor.shutdownNow();
         }
 
         try {
@@ -110,7 +112,7 @@ public class GroupConsumer {
 
         try {
             // Need better long running approach.
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 Thread.sleep(10000);
             }
         } catch (InterruptedException e) {
