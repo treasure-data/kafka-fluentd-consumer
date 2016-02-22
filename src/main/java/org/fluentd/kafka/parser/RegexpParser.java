@@ -1,5 +1,6 @@
 package org.fluentd.kafka.parser;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -22,7 +23,7 @@ public class RegexpParser extends MessageParser {
     public RegexpParser(PropertyConfig config) {
         super(config);
 
-        byte[] pattern = config.get("fluentd.record.pattern").getBytes();
+        byte[] pattern = config.get("fluentd.record.pattern").getBytes(StandardCharsets.UTF_8);
         regex = new Regex(pattern, 0, pattern.length, Option.DEFAULT, UTF8Encoding.INSTANCE);
         entries = setupNamedGroupEntries();
     }
@@ -41,11 +42,11 @@ public class RegexpParser extends MessageParser {
                 if (region.beg[index] == -1)
                     continue;
 
-                String value = new String(rawMessage, region.beg[index], region.end[index] - region.beg[index]);
+                String value = new String(rawMessage, region.beg[index], region.end[index] - region.beg[index], StandardCharsets.UTF_8);
                 data.put(e.name, value);
             }
         } else {
-            throw new RuntimeException("message has wrong format: message = " + new String(rawMessage));
+            throw new RuntimeException("message has wrong format: message = " + new String(rawMessage, StandardCharsets.UTF_8));
         }
 
         return data;
@@ -59,7 +60,7 @@ public class RegexpParser extends MessageParser {
             NameEntry e = entryIt.next();
             int index = e.getBackRefs()[0];
 
-            entries[i] = new NamedGroupEntry(new String(e.name, e.nameP, e.nameEnd - e.nameP), index);
+            entries[i] = new NamedGroupEntry(new String(e.name, e.nameP, e.nameEnd - e.nameP, StandardCharsets.UTF_8), index);
             i++;
         }
 

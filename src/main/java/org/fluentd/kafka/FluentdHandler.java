@@ -1,6 +1,7 @@
 package org.fluentd.kafka;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public class FluentdHandler implements Runnable {
                     throw e;
                 } catch (Exception e) {
                     Map<String, Object> data = new HashMap<String, Object>();
-                    data.put("message", new String(entry.message()));
+                    data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
                     logger.emit("failed", data); // should be configurable
                 }
             } catch (IOException e) {

@@ -1,5 +1,6 @@
 package org.fluentd.kafka.parser;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class JsonParser extends MessageParser {
     @Override
     public Map<String, Object> parse(MessageAndMetadata<byte[], byte[]> entry) throws Exception {
         try {
-            return mapper.readValue(new String(entry.message()), typeRef);
+            return mapper.readValue(new String(entry.message(), StandardCharsets.UTF_8), typeRef);
         } catch (IOException e) {
             throw new RuntimeException(e); // Avoid IOException conflict with fluency logger
         }
