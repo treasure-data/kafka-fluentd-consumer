@@ -1,11 +1,13 @@
 package org.fluentd.kafka;
 
 import java.io.IOException;
+import java.lang.IllegalArgumentException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.text.SimpleDateFormat;
+import java.math.BigInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,7 @@ public class FluentdHandler implements Runnable {
                     // TODO: Add kafka metadata like metada and topic
                     // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
                     if (timeField == null) {
-                        logger.emit(tagger.generate(entry.topic()), data);
+                        emitEvent(tagger.generate(entry.topic()), data);
                     } else {
                         long time;
                         try {
@@ -60,14 +62,14 @@ public class FluentdHandler implements Runnable {
                             LOG.warn("failed to parse event time: " + e.getMessage());
                             time = System.currentTimeMillis() / 1000;
                         }
-                        logger.emit(tagger.generate(entry.topic()), time, data);
+                        emitEvent(tagger.generate(entry.topic()), data, time);
                     }
                 } catch (IOException e) {
                     throw e;
                 } catch (Exception e) {
                     Map<String, Object> data = new HashMap<String, Object>();
                     data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
-                    logger.emit("failed", data); // should be configurable
+                    emitEvent("failed", data);
                 }
             } catch (IOException e) {
                 LOG.error("can't send a log to fluentd. Wait 1 second", e);
@@ -99,5 +101,29 @@ public class FluentdHandler implements Runnable {
             return null;
 
         return new SimpleDateFormat(config.get("fluentd.record.time.pattern"));
+    }
+
+    private void emitEvent(String tag, Map<String, Object> data) throws IOException {
+        emitEvent(tag, data, 0);
+    }
+
+    private void emitEvent(String tag, Map<String, Object> data, long timestamp) throws IOException {
+        try {
+            if (timestamp == 0)
+                logger.emit(tag, data);
+            else
+                logger.emit(tag, timestamp, data);
+        } catch (IllegalArgumentException e) { // MessagePack can't serialize BigInteger larger than 2^64 - 1 so convert it to String
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof BigInteger)
+                    entry.setValue(value.toString());
+            }
+
+            if (timestamp == 0)
+                logger.emit(tag, data);
+            else
+                logger.emit(tag, timestamp, data);
+        }
     }
 }
