@@ -35,6 +35,7 @@ public class PropertyConfig {
 
     public PropertyConfig(String propFilePath) throws IOException {
         props = loadProperties(propFilePath);
+        props.put("auto.commit.enable", "false");
         tagger = setupTagger();
     }
 

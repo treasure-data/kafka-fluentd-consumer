@@ -48,7 +48,6 @@ public class GroupConsumer {
     public void shutdown() {
         LOG.info("Shutting down consumers");
 
-        if (consumer != null) consumer.shutdown();
         if (executor != null) {
             executor.shutdown();
             try {
@@ -61,6 +60,7 @@ public class GroupConsumer {
                 executor.shutdownNow();
             }
         }
+        if (consumer != null) consumer.shutdown();
 
         try {
             fluentLogger.close();
@@ -76,7 +76,7 @@ public class GroupConsumer {
         // now create an object to consume the messages
         executor = Executors.newFixedThreadPool(numThreads);
         for (final KafkaStream stream : streams) {
-            executor.submit(new FluentdHandler(stream, config, fluentLogger));
+            executor.submit(new FluentdHandler(consumer, stream, config, fluentLogger));
         }
     }
 
