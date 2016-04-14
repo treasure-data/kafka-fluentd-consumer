@@ -34,6 +34,7 @@ public class FluentdHandler implements Runnable {
     private final MessageParser parser;
     private final String timeField;
     private final SimpleDateFormat formatter;
+    private final int batchSize;
 
     public FluentdHandler(ConsumerConnector consumer, KafkaStream stream, PropertyConfig config, Fluency logger) {
         this.config = config;
@@ -44,6 +45,7 @@ public class FluentdHandler implements Runnable {
         this.consumer = consumer;
         this.timeField = config.get("fluentd.record.time.field", null);
         this.formatter = setupTimeFormatter();
+        this.batchSize = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_BATCH_SIZE.key, PropertyConfig.Constants.DEFAULT_BATCH_SIZE);
     }
 
     public void run() {
@@ -89,7 +91,7 @@ public class FluentdHandler implements Runnable {
                     }
                 }
 
-                if (numEvents > 500) {
+                if (numEvents > batchSize) {
                     consumer.commitOffsets();
                     numEvents = 0;
                 }
