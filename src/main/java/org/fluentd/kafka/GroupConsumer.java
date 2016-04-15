@@ -51,7 +51,7 @@ public class GroupConsumer {
         if (executor != null) {
             executor.shutdown();
             try {
-                if (!executor.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
+                if (!executor.awaitTermination(3000, TimeUnit.MILLISECONDS)) {
                     LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
                     executor.shutdownNow();
                 }

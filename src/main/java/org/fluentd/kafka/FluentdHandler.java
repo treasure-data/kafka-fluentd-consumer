@@ -51,38 +51,49 @@ public class FluentdHandler implements Runnable {
     public void run() {
         ConsumerIterator<byte[], byte[]> it = stream.iterator();
         int numEvents = 0;
+        Exception ex = null;
 
         while (!Thread.interrupted()) {
             while (hasNext(it)) {
                 MessageAndMetadata<byte[], byte[]> entry = it.next();
 
                 try {
-                    try {
-                        Map<String, Object> data = parser.parse(entry);
-                        // TODO: Add kafka metadata like metada and topic
-                        // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
-                        if (timeField == null) {
-                            emitEvent(tagger.generate(entry.topic()), data);
-                        } else {
-                            long time;
-                            try {
-                                time = formatter.parse((String)data.get(timeField)).getTime() / 1000;
-                            } catch (Exception e) {
-                                LOG.warn("failed to parse event time: " + e.getMessage());
-                                time = System.currentTimeMillis() / 1000;
-                            }
-                            emitEvent(tagger.generate(entry.topic()), data, time);
+                    Map<String, Object> data = parser.parse(entry);
+                    // TODO: Add kafka metadata like metada and topic
+                    // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
+                    if (timeField == null) {
+                        emitEvent(tagger.generate(entry.topic()), data);
+                    } else {
+                        long time;
+                        try {
+                            time = formatter.parse((String)data.get(timeField)).getTime() / 1000;
+                        } catch (Exception e) {
+                            LOG.warn("failed to parse event time: " + e.getMessage());
+                            time = System.currentTimeMillis() / 1000;
                         }
-                    } catch (IOException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        Map<String, Object> data = new HashMap<String, Object>();
-                        data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
-                        emitEvent("failed", data);
+                        emitEvent(tagger.generate(entry.topic()), data, time);
                     }
-                    numEvents++;
                 } catch (IOException e) {
-                    LOG.error("can't send a log to fluentd. Wait 1 second", e);
+                    ex = e;
+                } catch (Exception e) {
+                    Map<String, Object> data = new HashMap<String, Object>();
+                    data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
+                    try {
+                        emitEvent("failed", data);
+                    } catch (IOException e2) {
+                        ex = e2;
+                    }
+                }
+
+                numEvents++;
+                if (numEvents > batchSize) {
+                    consumer.commitOffsets();
+                    numEvents = 0;
+                }
+
+                if (ex != null) {
+                    LOG.error("can't send a log to fluentd. Wait 1 second", ex);
+                    ex = null;
                     try {
                         TimeUnit.SECONDS.sleep(1);
                     } catch (InterruptedException ie) {
@@ -91,10 +102,6 @@ public class FluentdHandler implements Runnable {
                     }
                 }
 
-                if (numEvents > batchSize) {
-                    consumer.commitOffsets();
-                    numEvents = 0;
-                }
             }
         }
 
