@@ -19,9 +19,12 @@ public class PropertyConfig {
         FLUENTD_CONSUMER_TOPICS("fluentd.consumer.topics"),
         FLUENTD_CONSUMER_TOPICS_PATTERN("fluentd.consumer.topics.pattern"),
         FLUENTD_CONSUMER_THREADS("fluentd.consumer.threads"),
+        FLUENTD_CONSUMER_BATCH_SIZE("fluentd.consumer.batch.size"),
         FLUENTD_CONSUMER_FROM_BEGINNING("fluentd.consumer.from.beginning"),
         KAFKA_ZOOKEEPER_CONNECT("zookeeper.connect"),
         KAFKA_GROUP_ID("group.id");
+
+        public static final int DEFAULT_BATCH_SIZE = 1000;
 
         public final String key;
 
@@ -35,6 +38,7 @@ public class PropertyConfig {
 
     public PropertyConfig(String propFilePath) throws IOException {
         props = loadProperties(propFilePath);
+        props.put("auto.commit.enable", "false");
         tagger = setupTagger();
     }
 

@@ -12,6 +12,8 @@ import java.math.BigInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import kafka.javaapi.consumer.ConsumerConnector;
+import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.message.MessageAndMetadata;
@@ -26,28 +28,35 @@ public class FluentdHandler implements Runnable {
 
     private final PropertyConfig config;
     private final FluentdTagger tagger;
+    private final ConsumerConnector consumer;
     private final KafkaStream stream;
     private final Fluency logger;
     private final MessageParser parser;
     private final String timeField;
     private final SimpleDateFormat formatter;
+    private final int batchSize;
 
-    public FluentdHandler(KafkaStream stream, PropertyConfig config, Fluency logger) {
+    public FluentdHandler(ConsumerConnector consumer, KafkaStream stream, PropertyConfig config, Fluency logger) {
         this.config = config;
         this.tagger = config.getTagger();
         this.stream = stream;
         this.logger = logger;
         this.parser = setupParser();
+        this.consumer = consumer;
         this.timeField = config.get("fluentd.record.time.field", null);
         this.formatter = setupTimeFormatter();
+        this.batchSize = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_BATCH_SIZE.key, PropertyConfig.Constants.DEFAULT_BATCH_SIZE);
     }
 
     public void run() {
         ConsumerIterator<byte[], byte[]> it = stream.iterator();
-        while (it.hasNext()) {
-            MessageAndMetadata<byte[], byte[]> entry = it.next();
+        int numEvents = 0;
+        Exception ex = null;
 
-            try {
+        while (!Thread.interrupted()) {
+            while (hasNext(it)) {
+                MessageAndMetadata<byte[], byte[]> entry = it.next();
+
                 try {
                     Map<String, Object> data = parser.parse(entry);
                     // TODO: Add kafka metadata like metada and topic
@@ -65,21 +74,40 @@ public class FluentdHandler implements Runnable {
                         emitEvent(tagger.generate(entry.topic()), data, time);
                     }
                 } catch (IOException e) {
-                    throw e;
+                    ex = e;
                 } catch (Exception e) {
                     Map<String, Object> data = new HashMap<String, Object>();
                     data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
-                    emitEvent("failed", data);
+                    try {
+                        emitEvent("failed", data);
+                    } catch (IOException e2) {
+                        ex = e2;
+                    }
                 }
-            } catch (IOException e) {
-                LOG.error("can't send a log to fluentd. Wait 1 second", e);
-                try {
-                    TimeUnit.SECONDS.sleep(1);
-                } catch (InterruptedException ie) {
-                    LOG.warn("Interrupted during sleep");
-                    Thread.currentThread().interrupt();
+
+                numEvents++;
+                if (numEvents > batchSize) {
+                    consumer.commitOffsets();
+                    numEvents = 0;
                 }
+
+                if (ex != null) {
+                    LOG.error("can't send a log to fluentd. Wait 1 second", ex);
+                    ex = null;
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException ie) {
+                        LOG.warn("Interrupted during sleep");
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
             }
+        }
+
+        if (numEvents > 0) {
+            consumer.commitOffsets();
+            numEvents = 0;
         }
     }
 
@@ -93,6 +121,15 @@ public class FluentdHandler implements Runnable {
             return new RegexpParser(config);
         default:
             throw new RuntimeException(format + " format is not supported");
+        }
+    }
+
+    private boolean hasNext(ConsumerIterator<byte[], byte[]> it) {
+        try {
+            it.hasNext();
+            return true;
+        } catch (ConsumerTimeoutException e) {
+            return false;
         }
     }
 
