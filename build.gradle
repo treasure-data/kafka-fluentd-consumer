@@ -1,4 +1,4 @@
-plugins { 
+plugins {
   id 'java'
   id 'maven'
   id 'com.github.johnrengelman.shadow' version '1.2.2'
@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.komamitsu', name: 'fluency', version: '0.0.9'
+    compile group: 'org.komamitsu', name: 'fluency', version: '0.0.10'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'
     compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.12'
     compile group: "org.apache.kafka", name: "kafka_2.10", version: "0.8.2.0"
