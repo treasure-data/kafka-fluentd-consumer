@@ -42,7 +42,13 @@ public class GroupConsumer {
     }
 
     public Fluency setupFluentdLogger() throws IOException {
-        return Fluency.defaultFluency(config.getFluentdConnect());
+        Fluency.Config fConf = new Fluency.Config().setAckResponseMode(true);
+        try {
+            fConf.setFileBackupDir(config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_BACKUP_DIR.key));
+        } catch (Exception e) {
+            LOG.warn(PropertyConfig.Constants.FLUENTD_CONSUMER_BACKUP_DIR.key + " is not configured. Log lost may happen during shutdown if there are no active fluentd destinations");
+        }
+        return Fluency.defaultFluency(config.getFluentdConnect(), fConf);
     }
  
     public void shutdown() {
@@ -64,10 +70,18 @@ public class GroupConsumer {
 
         try {
             fluentLogger.close();
+            for (int i  =  0; i < 30; i++) {
+                if (fluentLogger.isTerminated())
+                    break;
+
+                try {
+                    TimeUnit.SECONDS.sleep(2);
+                } catch (InterruptedException e) {}
+            }
         } catch (IOException e) {
             LOG.error("failed to close fluentd logger completely", e);
         }
-   }
+    }
  
     public void run() {
         int numThreads = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key);

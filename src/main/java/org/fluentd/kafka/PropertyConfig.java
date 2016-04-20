@@ -20,6 +20,7 @@ public class PropertyConfig {
         FLUENTD_CONSUMER_TOPICS_PATTERN("fluentd.consumer.topics.pattern"),
         FLUENTD_CONSUMER_THREADS("fluentd.consumer.threads"),
         FLUENTD_CONSUMER_BATCH_SIZE("fluentd.consumer.batch.size"),
+        FLUENTD_CONSUMER_BACKUP_DIR("fluentd.consumer.backup.dir"),
         FLUENTD_CONSUMER_FROM_BEGINNING("fluentd.consumer.from.beginning"),
         KAFKA_ZOOKEEPER_CONNECT("zookeeper.connect"),
         KAFKA_GROUP_ID("group.id");
