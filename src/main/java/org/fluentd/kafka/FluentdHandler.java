@@ -60,7 +60,6 @@ public class FluentdHandler implements Runnable {
                 try {
                     Map<String, Object> data = parser.parse(entry);
                     // TODO: Add kafka metadata like metada and topic
-                    // TODO: Improve performance with batch insert and need to fallback feature to another fluentd instance
                     if (timeField == null) {
                         emitEvent(tagger.generate(entry.topic()), data);
                     } else {

@@ -81,7 +81,7 @@ public class GroupConsumer {
         } catch (IOException e) {
             LOG.error("failed to close fluentd logger completely", e);
         }
-   }
+    }
  
     public void run() {
         int numThreads = config.getInt(PropertyConfig.Constants.FLUENTD_CONSUMER_THREADS.key);
