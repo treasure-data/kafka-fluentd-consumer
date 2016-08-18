@@ -90,7 +90,7 @@ public class GroupConsumer {
         // now create an object to consume the messages
         executor = Executors.newFixedThreadPool(numThreads);
         for (final KafkaStream stream : streams) {
-            executor.submit(new FluentdHandler(consumer, stream, config, fluentLogger));
+            executor.submit(new FluentdHandler(consumer, stream, config, fluentLogger, executor));
         }
     }
 

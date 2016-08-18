@@ -40,6 +40,8 @@ public class PropertyConfig {
     public PropertyConfig(String propFilePath) throws IOException {
         props = loadProperties(propFilePath);
         props.put("auto.commit.enable", "false");
+        if (!props.containsKey("consumer.timeout.ms"))
+            props.put("consumer.timeout.ms", "10");
         tagger = setupTagger();
     }
 
