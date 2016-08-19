@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 import java.text.SimpleDateFormat;
 import java.math.BigInteger;
 
@@ -35,13 +36,15 @@ public class FluentdHandler implements Runnable {
     private final String timeField;
     private final SimpleDateFormat formatter;
     private final int batchSize;
+    private final ExecutorService executor;
 
-    public FluentdHandler(ConsumerConnector consumer, KafkaStream stream, PropertyConfig config, Fluency logger) {
+    public FluentdHandler(ConsumerConnector consumer, KafkaStream stream, PropertyConfig config, Fluency logger, ExecutorService executor) {
         this.config = config;
         this.tagger = config.getTagger();
         this.stream = stream;
         this.logger = logger;
         this.parser = setupParser();
+        this.executor = executor;
         this.consumer = consumer;
         this.timeField = config.get("fluentd.record.time.field", null);
         this.formatter = setupTimeFormatter();
@@ -53,7 +56,7 @@ public class FluentdHandler implements Runnable {
         int numEvents = 0;
         Exception ex = null;
 
-        while (!Thread.interrupted()) {
+        while (!executor.isShutdown()) {
             while (hasNext(it)) {
                 MessageAndMetadata<byte[], byte[]> entry = it.next();
 
@@ -88,10 +91,11 @@ public class FluentdHandler implements Runnable {
                 if (numEvents > batchSize) {
                     consumer.commitOffsets();
                     numEvents = 0;
+                    break;
                 }
 
                 if (ex != null) {
-                    LOG.error("can't send a log to fluentd. Wait 1 second", ex);
+                    LOG.error("can't send logs to fluentd. Wait 1 second", ex);
                     ex = null;
                     try {
                         TimeUnit.SECONDS.sleep(1);
