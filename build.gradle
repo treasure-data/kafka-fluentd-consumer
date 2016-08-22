@@ -4,7 +4,7 @@ plugins {
   id 'com.github.johnrengelman.shadow' version '1.2.2'
 }
 
-version = '0.2.3'
+version = '0.2.4'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.6'
