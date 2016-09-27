@@ -42,12 +42,36 @@ public class GroupConsumer {
     }
 
     public Fluency setupFluentdLogger() throws IOException {
-        Fluency.Config fConf = new Fluency.Config().setAckResponseMode(true);
+        Fluency.Config fConf = new Fluency.Config().setAckResponseMode(true).setMaxBufferSize(Long.valueOf(128 * 1024 * 1024L));
         try {
             fConf.setFileBackupDir(config.get(PropertyConfig.Constants.FLUENTD_CONSUMER_BACKUP_DIR.key));
         } catch (Exception e) {
             LOG.warn(PropertyConfig.Constants.FLUENTD_CONSUMER_BACKUP_DIR.key + " is not configured. Log lost may happen during shutdown if there are no active fluentd destinations");
         }
+
+        // Set fluent logger buffer parameters
+        String value = null;
+        try {
+            value = config.get(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_CHUNK_INITIAL.key);
+            fConf.setBufferChunkInitialSize(Integer.valueOf(value));
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_CHUNK_INITIAL.key + " parameter is wrong number format: " + value);
+        } catch (RuntimeException e) {}
+        try {
+            value = config.get(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_CHUNK_RETENTION.key);
+            //LOG.warn(Integer.valueOf(value));
+            fConf.setBufferChunkRetentionSize(Integer.valueOf(value));
+        } catch (NumberFormatException e) {
+            //LOG.warn(e);
+            throw new RuntimeException(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_CHUNK_RETENTION.key + " parameter is wrong number format: " + value);
+        } catch (RuntimeException e) {}
+        try {
+            value = config.get(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_MAX.key);
+            fConf.setMaxBufferSize(Long.valueOf(value));
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(PropertyConfig.Constants.FLUENTD_CLIENT_BUFFER_MAX.key + " parameter is wrong number format: " + value);
+        } catch (RuntimeException e) {}
+
         return Fluency.defaultFluency(config.getFluentdConnect(), fConf);
     }
  

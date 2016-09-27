@@ -14,6 +14,9 @@ import java.util.Properties;
 public class PropertyConfig {
     public enum Constants {
         FLUENTD_CONNECT("fluentd.connect"),
+        FLUENTD_CLIENT_BUFFER_CHUNK_INITIAL("fluentd.client.buffer.chunk.initial.bytes"),
+        FLUENTD_CLIENT_BUFFER_CHUNK_RETENTION("fluentd.client.buffer.chunk.retention.bytes"),
+        FLUENTD_CLIENT_BUFFER_MAX("fluentd.client.buffer.max.bytes"),
         FLUENTD_TAG("fluentd.tag"),
         FLUENTD_TAG_PREFIX("fluentd.tag.prefix"),
         FLUENTD_CONSUMER_TOPICS("fluentd.consumer.topics"),
