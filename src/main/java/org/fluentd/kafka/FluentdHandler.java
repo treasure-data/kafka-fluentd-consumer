@@ -20,6 +20,7 @@ import kafka.consumer.KafkaStream;
 import kafka.message.MessageAndMetadata;
 
 import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.BufferFullException;
 import org.fluentd.kafka.parser.MessageParser;
 import org.fluentd.kafka.parser.JsonParser;
 import org.fluentd.kafka.parser.RegexpParser;
@@ -59,29 +60,47 @@ public class FluentdHandler implements Runnable {
         while (!executor.isShutdown()) {
             while (hasNext(it)) {
                 MessageAndMetadata<byte[], byte[]> entry = it.next();
+                String tag = tagger.generate(entry.topic());
+                Map<String, Object> data = null;
+                long time = 0; // 0 means use logger's automatic time generation
 
                 try {
-                    Map<String, Object> data = parser.parse(entry);
+                    data = parser.parse(entry);
                     // TODO: Add kafka metadata like metada and topic
-                    if (timeField == null) {
-                        emitEvent(tagger.generate(entry.topic()), data);
-                    } else {
-                        long time;
+                    if (timeField != null) {
                         try {
                             time = formatter.parse((String)data.get(timeField)).getTime() / 1000;
                         } catch (Exception e) {
-                            LOG.warn("failed to parse event time: " + e.getMessage());
-                            time = System.currentTimeMillis() / 1000;
+                            LOG.warn("failed to parse event time. Use current time: " + e.getMessage());
                         }
-                        emitEvent(tagger.generate(entry.topic()), data, time);
+                    }
+                    emitEvent(tag, data, time);
+                } catch (BufferFullException bfe) {
+                    LOG.error("fluentd logger reached buffer full. Wait 1 second for retry", bfe);
+
+                    while (true) {
+                        try {
+                            TimeUnit.SECONDS.sleep(1);
+                        } catch (InterruptedException ie) {
+                            LOG.warn("Interrupted during sleep");
+                            Thread.currentThread().interrupt();
+                        }
+
+                        try {
+                            emitEvent(tag, data, time);
+                            LOG.info("Retry emit succeeded. Buffer full is resolved");
+                            break;
+                        } catch (IOException e) {}
+
+                        LOG.error("fluentd logger is still buffer full. Wait 1 second for next retry");
                     }
                 } catch (IOException e) {
                     ex = e;
                 } catch (Exception e) {
-                    Map<String, Object> data = new HashMap<String, Object>();
-                    data.put("message", new String(entry.message(), StandardCharsets.UTF_8));
+                    Map<String, Object> failedData = new HashMap<String, Object>();
+                    failedData.put("message", new String(entry.message(), StandardCharsets.UTF_8));
                     try {
-                        emitEvent("failed", data);
+                        emitEvent("failed", failedData, 0);
                     } catch (IOException e2) {
                         ex = e2;
                     }
@@ -141,10 +160,6 @@ public class FluentdHandler implements Runnable {
             return null;
 
         return new SimpleDateFormat(config.get("fluentd.record.time.pattern"));
-    }
-
-    private void emitEvent(String tag, Map<String, Object> data) throws IOException {
-        emitEvent(tag, data, 0);
     }
 
     private void emitEvent(String tag, Map<String, Object> data, long timestamp) throws IOException {
