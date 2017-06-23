@@ -151,6 +151,7 @@ public class FluentdHandler implements Runnable {
             it.hasNext();
             return true;
         } catch (ConsumerTimeoutException e) {
+            LOG.debug("Consumption was timed out", e);
             return false;
         }
     }
