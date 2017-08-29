@@ -61,9 +61,9 @@ A couple of users has been asking to host consumer as a child process of Fluentd
       format json
     </source>
 
-## Fluentd Enterprise
+## Enterprise Fluentd
 
-Treasure Data offers [Fluentd Enterprise](https://fluentd.treasuredata.com) for those looking for enterprise certified connectors for Kafka among other enterprise features (packaging, security, monitoring and support).
+Treasure Data offers [Enterprise Fluentd](https://fluentd.treasuredata.com) for those looking for enterprise certified connectors for Kafka among other enterprise features (packaging, security, monitoring and support).
 
 ## TODO
 
