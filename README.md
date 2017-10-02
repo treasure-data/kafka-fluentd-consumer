@@ -1,6 +1,6 @@
 # Kafka Consumer for Fluentd
 
-This is a simple Java application to consume data from Kafka and forward to Fluentd.
+This integration is a simple Java application that you can use to consume data from Kafka to Fluentd. You can download the application from this page and then complete the following instructions.
 
 ## Build
 
@@ -12,7 +12,7 @@ Use gradle 2.1 or later.
 
 ### Run Kafka
 
-You need to be running Kafka for the consumer to work. To test Kafka locally, please follow the steps described in [Kafka's Quickstart](http://kafka.apache.org/documentation.html#quickstart).
+You need to be running Kafka for the consumer to work. To test Kafka locally, follow the steps described in [Kafka's Quickstart](http://kafka.apache.org/documentation.html#quickstart).
 
     # start zookeeper
     $ bin/zookeeper-server-start.sh config/zookeeper.properties
@@ -25,7 +25,7 @@ Then create a topic called `test`
     # create test topic
     $ bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
 
-Once the 'test' topic is created, add a few messages in it. Make sure message is valid JSON.
+When the 'test' topic is created, add a few messages in it. Make sure message is valid JSON.
 
     # send multiple messages
     $ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test 
@@ -40,7 +40,7 @@ You can confirm messages were submitted correctly with this command.
 
 ### Run Kafka Consumer for Fluentd
 
-Modify `config/fluentd-consumer.properties` with an appropriate configuration. Don't forget to change to `fluentd.consumer.topics=test`. Finally please launch the process like this.
+Modify `config/fluentd-consumer.properties` with an appropriate configuration. Remember to change to `fluentd.consumer.topics=test`. Then, launch the process like this.
 
     $ java -Dlog4j.configuration=file:///path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.3.1-all.jar config/fluentd-consumer.properties
 
@@ -48,7 +48,7 @@ This will forward logs to Fluentd (localhost:24224). This consumer uses log4j so
 
 ## Run Kafka Consumer for Fluentd via in_exec
 
-A couple of users has been asking to host consumer as a child process of Fluentd. In that case, 
+To host a consumer as a child process of Fluentd, use the following code: 
 
     <source>
       type forward
