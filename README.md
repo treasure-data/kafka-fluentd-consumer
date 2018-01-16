@@ -42,7 +42,7 @@ You can confirm messages were submitted correctly with this command.
 
 Modify `config/fluentd-consumer.properties` with an appropriate configuration. Remember to change to `fluentd.consumer.topics=test`. Then, launch the process like this.
 
-    $ java -Dlog4j.configuration=file:///path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.3.1-all.jar config/fluentd-consumer.properties
+    $ java -Dlog4j.configuration=file:///path/to/log4j.properties -jar build/libs/kafka-fluentd-consumer-0.3.2-all.jar config/fluentd-consumer.properties
 
 This will forward logs to Fluentd (localhost:24224). This consumer uses log4j so you can change logging configurations via `-Dlog4j.configuration` argument.
 
@@ -56,7 +56,7 @@ To host a consumer as a child process of Fluentd, use the following code:
     
     <source>
       type exec
-      command java -Dlog4j.configuration=file:///path/to/log4j.properties -jar /path/to/kafka-fluentd-consumer-0.3.1-all.jar /path/to/config/fluentd-consumer.properties
+      command java -Dlog4j.configuration=file:///path/to/log4j.properties -jar /path/to/kafka-fluentd-consumer-0.3.2-all.jar /path/to/config/fluentd-consumer.properties
       tag dummy
       format json
     </source>
