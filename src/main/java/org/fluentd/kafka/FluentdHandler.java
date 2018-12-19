@@ -53,83 +53,92 @@ public class FluentdHandler implements Runnable {
     }
 
     public void run() {
-        ConsumerIterator<byte[], byte[]> it = stream.iterator();
-        int numEvents = 0;
-        Exception ex = null;
+        try {
+            ConsumerIterator<byte[], byte[]> it = stream.iterator();
+            int numEvents = 0;
+            Exception ex = null;
 
-        while (!executor.isShutdown()) {
-            while (hasNext(it)) {
-                MessageAndMetadata<byte[], byte[]> entry = it.next();
-                String tag = tagger.generate(entry.topic());
-                Map<String, Object> data = null;
-                long time = 0; // 0 means use logger's automatic time generation
+            while (!executor.isShutdown()) {
+                while (hasNext(it)) {
+                    MessageAndMetadata<byte[], byte[]> entry = it.next();
+                    String tag = tagger.generate(entry.topic());
+                    Map<String, Object> data = null;
+                    long time = 0; // 0 means use logger's automatic time generation
 
-                try {
-                    data = parser.parse(entry);
-                    // TODO: Add kafka metadata like metada and topic
-                    if (timeField != null) {
+                    try {
+                        data = parser.parse(entry);
+
+                        // TODO: Add kafka metadata like metada and topic
+                        if (timeField != null) {
+                            try {
+                                time = formatter.parse((String) data.get(timeField)).getTime() / 1000;
+                            } catch (Exception e) {
+                                LOG.warn("failed to parse event time. Use current time: " + e.getMessage());
+                            }
+                        }
+                        emitEvent(tag, data, time);
+                    } catch (BufferFullException bfe) {
+                        LOG.error("fluentd logger reached buffer full. Wait 1 second for retry", bfe);
+
+                        while (true) {
+                            try {
+                                TimeUnit.SECONDS.sleep(1);
+                            } catch (InterruptedException ie) {
+                                LOG.warn("Interrupted during sleep");
+                                Thread.currentThread().interrupt();
+                            }
+
+                            try {
+                                emitEvent(tag, data, time);
+                                LOG.info("Retry emit succeeded. Buffer full is resolved");
+                                break;
+                            } catch (IOException e) {
+                            }
+
+                            LOG.error("fluentd logger is still buffer full. Wait 1 second for next retry");
+                        }
+                    } catch (IOException e) {
+                        ex = e;
+                    } catch (Exception e) {
                         try {
-                            time = formatter.parse((String)data.get(timeField)).getTime() / 1000;
-                        } catch (Exception e) {
-                            LOG.warn("failed to parse event time. Use current time: " + e.getMessage());
+                            Map<String, Object> failedData = new HashMap<String, Object>();
+                            failedData.put("message", new String(entry.message(), StandardCharsets.UTF_8));
+                            emitEvent("failed", failedData, 0);
+                        } catch (IOException e2) {
+                            ex = e2;
+                        } catch (IllegalArgumentException e3) { // message crc error will throw IllegalArgumentException
+                            ex = e3;
                         }
                     }
-                    emitEvent(tag, data, time);
-                } catch (BufferFullException bfe) {
-                    LOG.error("fluentd logger reached buffer full. Wait 1 second for retry", bfe);
 
-                    while (true) {
+                    numEvents++;
+                    if (numEvents > batchSize) {
+                        consumer.commitOffsets();
+                        numEvents = 0;
+                        break;
+                    }
+
+                    if (ex != null) {
+                        LOG.error("can't send logs to fluentd. Wait 1 second", ex);
+                        ex = null;
                         try {
                             TimeUnit.SECONDS.sleep(1);
                         } catch (InterruptedException ie) {
                             LOG.warn("Interrupted during sleep");
                             Thread.currentThread().interrupt();
                         }
-
-                        try {
-                            emitEvent(tag, data, time);
-                            LOG.info("Retry emit succeeded. Buffer full is resolved");
-                            break;
-                        } catch (IOException e) {}
-
-                        LOG.error("fluentd logger is still buffer full. Wait 1 second for next retry");
                     }
-                } catch (IOException e) {
-                    ex = e;
-                } catch (Exception e) {
-                    Map<String, Object> failedData = new HashMap<String, Object>();
-                    failedData.put("message", new String(entry.message(), StandardCharsets.UTF_8));
-                    try {
-                        emitEvent("failed", failedData, 0);
-                    } catch (IOException e2) {
-                        ex = e2;
-                    }
-                }
 
-                numEvents++;
-                if (numEvents > batchSize) {
-                    consumer.commitOffsets();
-                    numEvents = 0;
-                    break;
                 }
-
-                if (ex != null) {
-                    LOG.error("can't send logs to fluentd. Wait 1 second", ex);
-                    ex = null;
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException ie) {
-                        LOG.warn("Interrupted during sleep");
-                        Thread.currentThread().interrupt();
-                    }
-                }
-
             }
-        }
 
-        if (numEvents > 0) {
-            consumer.commitOffsets();
-            numEvents = 0;
+            if (numEvents > 0) {
+                consumer.commitOffsets();
+                numEvents = 0;
+            }
+        } catch (Exception e) {
+            LOG.error("fluentd consumer thread " + Thread.currentThread().getName() + " was dead, Unknown exception...", e);
+            throw e;
         }
     }
 
