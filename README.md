@@ -61,10 +61,6 @@ To host a consumer as a child process of Fluentd, use the following code:
       format json
     </source>
 
-## Enterprise Fluentd
-
-Treasure Data offers [Enterprise Fluentd](https://fluentd.treasuredata.com) for those looking for enterprise certified connectors for Kafka among other enterprise features (packaging, security, monitoring and support).
-
 ## TODO
 
 - Support more format, e.g. msgpack.
