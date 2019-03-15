@@ -108,6 +108,8 @@ public class FluentdHandler implements Runnable {
                             ex = e2;
                         } catch (IllegalArgumentException e3) { // message crc error will throw IllegalArgumentException
                             ex = e3;
+                        } catch (IndexOutOfBoundsException e4) {
+                            ex = e4;
                         }
                     }
 
